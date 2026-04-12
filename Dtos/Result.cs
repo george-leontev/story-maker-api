@@ -1,5 +1,22 @@
 namespace StoryMakerApi.Dtos;
 
+public sealed record Result
+{
+    public bool IsSuccess { get; }
+    public string? Error { get; }
+
+    private Result(string error)
+    {
+        IsSuccess = false;
+        Error = error;
+    }
+
+    private Result() => IsSuccess = true;
+
+    public static Result Success() => new();
+    public static Result Failure(string error) => new(error);
+}
+
 public sealed record Result<T>
 {
     public bool IsSuccess { get; }

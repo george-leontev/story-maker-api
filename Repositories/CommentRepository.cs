@@ -1,0 +1,45 @@
+using Microsoft.EntityFrameworkCore;
+using StoryMakerApi.Data;
+using StoryMakerApi.Models;
+
+namespace StoryMakerApi.Repositories;
+
+public sealed class CommentRepository : ICommentRepository
+{
+    private readonly LivePlotDbContext _db;
+
+    public CommentRepository(LivePlotDbContext db) => _db = db;
+
+    public async Task<IReadOnlyList<Comment>> GetByStoryIdAsync(int storyId, CancellationToken cancellationToken)
+    {
+        return await _db.Comments
+            .Include(c => c.User)
+            .Where(c => c.StoryId == storyId)
+            .OrderByDescending(c => c.Timestamp)
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task AddAsync(Comment comment, CancellationToken cancellationToken)
+    {
+        _db.Comments.Add(comment);
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<bool> IsAuthorAsync(int commentId, int userId, CancellationToken cancellationToken)
+    {
+        return await _db.Comments
+            .AsNoTracking()
+            .AnyAsync(c => c.Id == commentId && c.UserId == userId, cancellationToken);
+    }
+
+    public async Task DeleteAsync(int commentId, CancellationToken cancellationToken)
+    {
+        var comment = await _db.Comments.FindAsync([commentId], cancellationToken: cancellationToken);
+        if (comment is not null)
+        {
+            _db.Comments.Remove(comment);
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+    }
+}
