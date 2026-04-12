@@ -71,6 +71,8 @@ public sealed class ChoiceService : IChoiceService
         if (choice == null)
             return Result<ChoiceResponse>.Failure("Choice not found.");
 
+        await TryCloseExpiredChoiceAsync(choice, cancellationToken);
+
         return Result<ChoiceResponse>.Success(MapToPublicResponse(choice));
     }
 
@@ -83,6 +85,8 @@ public sealed class ChoiceService : IChoiceService
         var story = await _storyRepository.FindByIdAsync(choice.Chapter.StoryId, cancellationToken);
         if (story == null || story.AuthorId != authorId)
             return Result<ChoiceAuthorResponse>.Failure("You are not the author of this story.");
+
+        await TryCloseExpiredChoiceAsync(choice, cancellationToken);
 
         return Result<ChoiceAuthorResponse>.Success(MapToAuthorResponse(choice));
     }
@@ -101,8 +105,9 @@ public sealed class ChoiceService : IChoiceService
 
         if (DateTime.UtcNow > choice.ExpiresAt)
         {
+            _logger.LogInformation("Choice {ChoiceId} expired. Auto-closing on vote attempt.", choiceId);
             await _choiceRepository.CloseChoiceAsync(choice, cancellationToken);
-            return Result<bool>.Failure("This choice just expired. Vote not counted.");
+            return Result<bool>.Failure("This choice has expired. Vote not counted.");
         }
 
         if (await _choiceRepository.HasVotedAsync(choiceId, userId, cancellationToken))
@@ -113,6 +118,15 @@ public sealed class ChoiceService : IChoiceService
         _logger.LogInformation("Vote recorded: User {UserId} voted option {Option} on Choice {ChoiceId}", userId, option, choiceId);
 
         return Result<bool>.Success(true);
+    }
+
+    private async Task TryCloseExpiredChoiceAsync(Models.Choice choice, CancellationToken cancellationToken)
+    {
+        if (!choice.IsClosed && DateTime.UtcNow > choice.ExpiresAt)
+        {
+            await _choiceRepository.CloseChoiceAsync(choice, cancellationToken);
+            _logger.LogInformation("Choice {ChoiceId} expired. Auto-closed during read.", choice.Id);
+        }
     }
 
     private static ChoiceResponse MapToPublicResponse(Models.Choice choice)
