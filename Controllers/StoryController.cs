@@ -1,28 +1,29 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using StoryMakerApi.Dtos;
 using StoryMakerApi.Dtos.Story;
-using StoryMakerApi.Models;
 using StoryMakerApi.Repositories;
 using StoryMakerApi.Services;
+using Swashbuckle.AspNetCore.Annotations;
 
 namespace StoryMakerApi.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
-public class StoryController : ControllerBase
+[SwaggerTag("Управление историями — создание, чтение, обновление и удаление")]
+public class StoryController : BaseController
 {
     private readonly IStoryService _storyService;
-    private readonly IUserRepository _userRepository;
 
-    public StoryController(IStoryService storyService, IUserRepository userRepository)
-    {
-        _storyService = storyService;
-        _userRepository = userRepository;
-    }
+    public StoryController(IUserRepository userRepository, IStoryService storyService)
+        : base(userRepository) => _storyService = storyService;
 
     [HttpGet]
+    [SwaggerOperation(
+        Summary = "Список всех историй",
+        Description = "Возвращает все истории, отсортированные по дате создания (сначала новые).",
+        OperationId = "GetAllStories")]
+    [SwaggerResponse(200, "Список историй успешно получен", typeof(IReadOnlyList<StoryResponse>))]
     public async Task<ActionResult<IReadOnlyList<StoryResponse>>> GetAll(CancellationToken cancellationToken)
     {
         var result = await _storyService.GetAllAsync(cancellationToken);
@@ -30,7 +31,15 @@ public class StoryController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
-    public async Task<ActionResult<StoryResponse>> GetById(int id, CancellationToken cancellationToken)
+    [SwaggerOperation(
+        Summary = "Получить историю по ID",
+        Description = "Возвращает одну историю, включая количество глав и информацию об авторе.",
+        OperationId = "GetStoryById")]
+    [SwaggerResponse(200, "История найдена", typeof(StoryResponse))]
+    [SwaggerResponse(404, "История не найдена")]
+    public async Task<ActionResult<StoryResponse>> GetById(
+        [SwaggerParameter("ID истории", Required = true)] int id,
+        CancellationToken cancellationToken)
     {
         var result = await _storyService.GetByIdAsync(id, cancellationToken);
         return result.IsSuccess
@@ -39,8 +48,14 @@ public class StoryController : ControllerBase
     }
 
     [HttpPost]
+    [SwaggerOperation(
+        Summary = "Создать новую историю",
+        Description = "Создаёт историю для аутентифицированного пользователя.",
+        OperationId = "CreateStory")]
+    [SwaggerResponse(201, "История создана", typeof(StoryResponse))]
+    [SwaggerResponse(400, "Ошибка валидации")]
     public async Task<ActionResult<StoryResponse>> Create(
-        [FromBody] CreateStoryRequest request,
+        [SwaggerParameter("Детали истории", Required = true)] [FromBody] CreateStoryRequest request,
         CancellationToken cancellationToken)
     {
         var user = await GetCurrentUserAsync(cancellationToken);
@@ -51,9 +66,15 @@ public class StoryController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [SwaggerOperation(
+        Summary = "Обновить историю",
+        Description = "Обновляет название и описание. Только автор может редактировать.",
+        OperationId = "UpdateStory")]
+    [SwaggerResponse(200, "История обновлена", typeof(StoryResponse))]
+    [SwaggerResponse(400, "Ошибка валидации или пользователь не является автором")]
     public async Task<ActionResult<StoryResponse>> Update(
-        int id,
-        [FromBody] UpdateStoryRequest request,
+        [SwaggerParameter("ID истории", Required = true)] int id,
+        [SwaggerParameter("Обновлённые данные", Required = true)] [FromBody] UpdateStoryRequest request,
         CancellationToken cancellationToken)
     {
         var user = await GetCurrentUserAsync(cancellationToken);
@@ -64,22 +85,20 @@ public class StoryController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
-    public async Task<ActionResult> Delete(int id, CancellationToken cancellationToken)
+    [SwaggerOperation(
+        Summary = "Удалить историю",
+        Description = "Удаляет историю и все её главы. Только автор может удалять.",
+        OperationId = "DeleteStory")]
+    [SwaggerResponse(204, "История удалена")]
+    [SwaggerResponse(400, "Пользователь не является автором")]
+    public async Task<ActionResult> Delete(
+        [SwaggerParameter("ID истории", Required = true)] int id,
+        CancellationToken cancellationToken)
     {
         var user = await GetCurrentUserAsync(cancellationToken);
         var result = await _storyService.DeleteAsync(id, user, cancellationToken);
         return result.IsSuccess
             ? NoContent()
             : BadRequest(new { error = result.Error });
-    }
-
-    private async Task<User> GetCurrentUserAsync(CancellationToken cancellationToken)
-    {
-        var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
-            throw new UnauthorizedAccessException("User not authenticated.");
-
-        var user = await _userRepository.FindByIdAsync(userId, cancellationToken);
-        return user ?? throw new UnauthorizedAccessException("User not found.");
     }
 }

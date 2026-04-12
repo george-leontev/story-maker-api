@@ -12,4 +12,5 @@ public interface IStoryRepository
     Task UpdateAsync(Story story, CancellationToken cancellationToken);
     Task<bool> IsAuthorAsync(int storyId, int userId, CancellationToken cancellationToken);
     Task DeleteAsync(int id, CancellationToken cancellationToken);
+    Task AddChoiceAsync(Choice choice, CancellationToken cancellationToken);
 }

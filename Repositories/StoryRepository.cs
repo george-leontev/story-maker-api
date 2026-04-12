@@ -75,4 +75,10 @@ public sealed class StoryRepository : IStoryRepository
             await _db.SaveChangesAsync(cancellationToken);
         }
     }
+
+    public async Task AddChoiceAsync(Choice choice, CancellationToken cancellationToken)
+    {
+        _db.Choices.Add(choice);
+        await _db.SaveChangesAsync(cancellationToken);
+    }
 }
