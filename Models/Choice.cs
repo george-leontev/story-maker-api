@@ -2,8 +2,8 @@ namespace StoryMakerApi.Models;
 
 public sealed class Choice
 {
-    public Guid Id { get; init; }
-    public Guid ChapterId { get; init; }
+    public int Id { get; init; }
+    public int ChapterId { get; init; }
     public required string Option1Text { get; init; }
     public required string Option2Text { get; init; }
     public int Option1Votes { get; set; }

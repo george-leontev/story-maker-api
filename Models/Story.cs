@@ -2,11 +2,11 @@ namespace StoryMakerApi.Models;
 
 public sealed class Story
 {
-    public Guid Id { get; init; }
-    public required string Title { get; init; }
-    public required string Description { get; init; }
-    public Guid AuthorId { get; init; }
-    public float Rating { get; set; }
+    public int Id { get; init; }
+    public string Title { get; internal set; } = string.Empty;
+    public string Description { get; internal set; } = string.Empty;
+    public int AuthorId { get; init; }
+    public float Rating { get; internal set; }
     public DateTime CreatedAt { get; init; }
 
     public User Author { get; init; } = null!;

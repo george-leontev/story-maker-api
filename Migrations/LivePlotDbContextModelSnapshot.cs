@@ -24,9 +24,11 @@ namespace story_maker_api.Migrations
 
             modelBuilder.Entity("StoryMakerApi.Models.Chapter", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Content")
                         .IsRequired()
@@ -38,8 +40,8 @@ namespace story_maker_api.Migrations
                     b.Property<int>("SequenceNumber")
                         .HasColumnType("int");
 
-                    b.Property<Guid>("StoryId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("StoryId")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -50,12 +52,14 @@ namespace story_maker_api.Migrations
 
             modelBuilder.Entity("StoryMakerApi.Models.Choice", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
 
-                    b.Property<Guid>("ChapterId")
-                        .HasColumnType("uniqueidentifier");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ChapterId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("datetime2");
@@ -87,12 +91,14 @@ namespace story_maker_api.Migrations
 
             modelBuilder.Entity("StoryMakerApi.Models.Comment", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
 
-                    b.Property<Guid>("StoryId")
-                        .HasColumnType("uniqueidentifier");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("StoryId")
+                        .HasColumnType("int");
 
                     b.Property<string>("Text")
                         .IsRequired()
@@ -101,8 +107,8 @@ namespace story_maker_api.Migrations
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
 
                     b.HasKey("Id");
 
@@ -115,12 +121,14 @@ namespace story_maker_api.Migrations
 
             modelBuilder.Entity("StoryMakerApi.Models.Story", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
 
-                    b.Property<Guid>("AuthorId")
-                        .HasColumnType("uniqueidentifier");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AuthorId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -145,11 +153,11 @@ namespace story_maker_api.Migrations
 
             modelBuilder.Entity("StoryMakerApi.Models.Subscription", b =>
                 {
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
 
-                    b.Property<Guid>("StoryId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("StoryId")
+                        .HasColumnType("int");
 
                     b.HasKey("UserId", "StoryId");
 
@@ -160,9 +168,11 @@ namespace story_maker_api.Migrations
 
             modelBuilder.Entity("StoryMakerApi.Models.User", b =>
                 {
-                    b.Property<Guid>("Id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -186,11 +196,11 @@ namespace story_maker_api.Migrations
 
             modelBuilder.Entity("StoryMakerApi.Models.Vote", b =>
                 {
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
 
-                    b.Property<Guid>("ChoiceId")
-                        .HasColumnType("uniqueidentifier");
+                    b.Property<int>("ChoiceId")
+                        .HasColumnType("int");
 
                     b.Property<int>("SelectedOption")
                         .HasColumnType("int");
