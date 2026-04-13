@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StoryMakerApi.Data;
 
@@ -11,9 +12,11 @@ using StoryMakerApi.Data;
 namespace story_maker_api.Migrations
 {
     [DbContext(typeof(LivePlotDbContext))]
-    partial class LivePlotDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260413063612_AddWinningOptionToChoice")]
+    partial class AddWinningOptionToChoice
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -154,36 +157,6 @@ namespace story_maker_api.Migrations
                     b.ToTable("Stories");
                 });
 
-            modelBuilder.Entity("StoryMakerApi.Models.StoryRating", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Score")
-                        .HasColumnType("int");
-
-                    b.Property<int>("StoryId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("StoryId");
-
-                    b.HasIndex("UserId", "StoryId")
-                        .IsUnique();
-
-                    b.ToTable("StoryRatings");
-                });
-
             modelBuilder.Entity("StoryMakerApi.Models.Subscription", b =>
                 {
                     b.Property<int>("UserId")
@@ -297,25 +270,6 @@ namespace story_maker_api.Migrations
                     b.Navigation("Author");
                 });
 
-            modelBuilder.Entity("StoryMakerApi.Models.StoryRating", b =>
-                {
-                    b.HasOne("StoryMakerApi.Models.Story", "Story")
-                        .WithMany("Ratings")
-                        .HasForeignKey("StoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("StoryMakerApi.Models.User", "User")
-                        .WithMany("Ratings")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Story");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("StoryMakerApi.Models.Subscription", b =>
                 {
                     b.HasOne("StoryMakerApi.Models.Story", "Story")
@@ -370,16 +324,12 @@ namespace story_maker_api.Migrations
 
                     b.Navigation("Comments");
 
-                    b.Navigation("Ratings");
-
                     b.Navigation("Subscriptions");
                 });
 
             modelBuilder.Entity("StoryMakerApi.Models.User", b =>
                 {
                     b.Navigation("Comments");
-
-                    b.Navigation("Ratings");
 
                     b.Navigation("Stories");
 

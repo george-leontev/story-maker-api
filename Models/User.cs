@@ -12,4 +12,5 @@ public sealed class User
     public ICollection<Vote> Votes { get; init; } = new List<Vote>();
     public ICollection<Comment> Comments { get; init; } = new List<Comment>();
     public ICollection<Subscription> Subscriptions { get; init; } = new List<Subscription>();
+    public ICollection<StoryRating> Ratings { get; init; } = new List<StoryRating>();
 }

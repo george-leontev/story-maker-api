@@ -10,14 +10,17 @@ public sealed class CommentRepository : ICommentRepository
 
     public CommentRepository(LivePlotDbContext db) => _db = db;
 
-    public async Task<IReadOnlyList<Comment>> GetByStoryIdAsync(int storyId, CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<Comment> Items, int TotalCount)> GetByStoryIdAsync(int storyId, int skip, int take, CancellationToken cancellationToken)
     {
-        return await _db.Comments
+        var query = _db.Comments
             .Include(c => c.User)
             .Where(c => c.StoryId == storyId)
-            .OrderByDescending(c => c.Timestamp)
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
+            .OrderByDescending(c => c.Timestamp);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query.Skip(skip).Take(take).ToListAsync(cancellationToken);
+
+        return (items, totalCount);
     }
 
     public async Task AddAsync(Comment comment, CancellationToken cancellationToken)

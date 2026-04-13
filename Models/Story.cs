@@ -13,4 +13,5 @@ public sealed class Story
     public ICollection<Chapter> Chapters { get; init; } = new List<Chapter>();
     public ICollection<Comment> Comments { get; init; } = new List<Comment>();
     public ICollection<Subscription> Subscriptions { get; init; } = new List<Subscription>();
+    public ICollection<StoryRating> Ratings { get; init; } = new List<StoryRating>();
 }

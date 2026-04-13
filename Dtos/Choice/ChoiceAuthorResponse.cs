@@ -8,6 +8,7 @@ public sealed record ChoiceAuthorResponse(
     string Option2Text,
     int Option1Votes,
     int Option2Votes,
+    int? WinningOption,      // null while active, determined when closed
     DateTime ExpiresAt,
     bool IsClosed
 );

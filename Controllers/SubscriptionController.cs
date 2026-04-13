@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using StoryMakerApi.Dtos;
+using StoryMakerApi.Dtos.Story;
 using StoryMakerApi.Dtos.Subscription;
 using StoryMakerApi.Repositories;
 using StoryMakerApi.Services;
@@ -73,5 +75,22 @@ public class SubscriptionController : BaseController
         return result.IsSuccess
             ? Ok(result.Value)
             : BadRequest(new { error = result.Error });
+    }
+
+    [HttpGet("subscribed")]
+    [Authorize]
+    [SwaggerOperation(
+        Summary = "Мои подписки",
+        Description = "Возвращает истории, на которые подписан текущий пользователь, с пагинацией.",
+        OperationId = "GetSubscribedStories")]
+    [SwaggerResponse(200, "Список подписок успешно получен", typeof(PagedResponse<StoryResponse>))]
+    public async Task<ActionResult<PagedResponse<StoryResponse>>> GetSubscribedStories(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        var result = await _subscriptionService.GetSubscribedStoriesAsync(userId, page, pageSize, cancellationToken);
+        return Ok(result);
     }
 }

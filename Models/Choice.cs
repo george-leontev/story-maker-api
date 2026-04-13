@@ -8,6 +8,7 @@ public sealed class Choice
     public required string Option2Text { get; init; }
     public int Option1Votes { get; set; }
     public int Option2Votes { get; set; }
+    public int? WinningOption { get; set; }
     public DateTime ExpiresAt { get; init; }
     public bool IsClosed { get; set; }
 

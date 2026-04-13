@@ -8,6 +8,7 @@ public sealed record ChoiceResponse(
     string Option2Text,
     DateTime ExpiresAt,
     bool IsClosed,
-    int? Option1Votes,      // null while active, revealed when closed
-    int? Option2Votes     // null while active, revealed when closed
-    );
+    int? WinningOption,      // 1, 2, or 0 (tie). Null while active.
+    int? Option1Votes,       // null while active, revealed when closed
+    int? Option2Votes        // null while active, revealed when closed
+);

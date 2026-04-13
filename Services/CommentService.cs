@@ -44,14 +44,17 @@ public sealed class CommentService : ICommentService
         ));
     }
 
-    public async Task<IReadOnlyList<CommentResponse>> GetByStoryIdAsync(int storyId, CancellationToken cancellationToken)
+    public async Task<PagedResponse<CommentResponse>> GetByStoryIdAsync(int storyId, int page, int pageSize, CancellationToken cancellationToken)
     {
-        var comments = await _commentRepository.GetByStoryIdAsync(storyId, cancellationToken);
+        var skip = (page - 1) * pageSize;
+        var (items, totalCount) = await _commentRepository.GetByStoryIdAsync(storyId, skip, pageSize, cancellationToken);
 
-        return comments
+        var comments = items
             .Select(c => new CommentResponse(c.Id, c.StoryId, c.User.Username, c.Text, c.Timestamp))
             .ToList()
             .AsReadOnly();
+
+        return new PagedResponse<CommentResponse>(comments, totalCount, page, pageSize);
     }
 
     public async Task<Result<bool>> DeleteAsync(int commentId, int userId, CancellationToken cancellationToken)

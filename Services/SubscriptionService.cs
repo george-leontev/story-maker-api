@@ -1,4 +1,5 @@
 using StoryMakerApi.Dtos;
+using StoryMakerApi.Dtos.Story;
 using StoryMakerApi.Dtos.Subscription;
 using StoryMakerApi.Models;
 using StoryMakerApi.Repositories;
@@ -61,5 +62,26 @@ public sealed class SubscriptionService : ISubscriptionService
             .AsReadOnly();
 
         return Result<IReadOnlyList<SubscriptionResponse>>.Success(subscribers);
+    }
+
+    public async Task<PagedResponse<StoryResponse>> GetSubscribedStoriesAsync(int userId, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        var skip = (page - 1) * pageSize;
+        var (items, totalCount) = await _subscriptionRepository.GetSubscribedStoriesAsync(userId, skip, pageSize, cancellationToken);
+
+        var stories = items.Select(s => MapToStoryResponse(s, s.Author!.Username)).ToList();
+        return new PagedResponse<StoryResponse>(stories.AsReadOnly(), totalCount, page, pageSize);
+    }
+
+    private static StoryResponse MapToStoryResponse(Story story, string authorUsername)
+    {
+        return new StoryResponse(
+            story.Id,
+            story.Title,
+            story.Description,
+            authorUsername,
+            story.Rating,
+            story.CreatedAt,
+            story.Chapters?.Count ?? 0);
     }
 }

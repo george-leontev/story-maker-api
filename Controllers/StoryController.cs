@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using StoryMakerApi.Dtos;
 using StoryMakerApi.Dtos.Story;
 using StoryMakerApi.Repositories;
 using StoryMakerApi.Services;
@@ -21,12 +22,31 @@ public class StoryController : BaseController
     [HttpGet]
     [SwaggerOperation(
         Summary = "Список всех историй",
-        Description = "Возвращает все истории, отсортированные по дате создания (сначала новые).",
+        Description = "Возвращает истории с пагинацией, отсортированные по дате создания (сначала новые).",
         OperationId = "GetAllStories")]
-    [SwaggerResponse(200, "Список историй успешно получен", typeof(IReadOnlyList<StoryResponse>))]
-    public async Task<ActionResult<IReadOnlyList<StoryResponse>>> GetAll(CancellationToken cancellationToken)
+    [SwaggerResponse(200, "Список историй успешно получен", typeof(PagedResponse<StoryResponse>))]
+    public async Task<ActionResult<PagedResponse<StoryResponse>>> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
     {
-        var result = await _storyService.GetAllAsync(cancellationToken);
+        var result = await _storyService.GetAllAsync(page, pageSize, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpGet("me")]
+    [SwaggerOperation(
+        Summary = "Мои истории",
+        Description = "Возвращает истории текущего пользователя с пагинацией.",
+        OperationId = "GetMyStories")]
+    [SwaggerResponse(200, "Список моих историй", typeof(PagedResponse<StoryResponse>))]
+    public async Task<ActionResult<PagedResponse<StoryResponse>>> GetMyStories(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        var result = await _storyService.GetByAuthorAsync(userId, page, pageSize, cancellationToken);
         return Ok(result);
     }
 

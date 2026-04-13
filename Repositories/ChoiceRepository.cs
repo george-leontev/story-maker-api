@@ -62,6 +62,9 @@ public sealed class ChoiceRepository : IChoiceRepository
     public async Task CloseChoiceAsync(Choice choice, CancellationToken cancellationToken)
     {
         choice.IsClosed = true;
+        choice.WinningOption = choice.Option1Votes > choice.Option2Votes ? 1
+            : choice.Option2Votes > choice.Option1Votes ? 2
+            : 0; // tie
         await _db.SaveChangesAsync(cancellationToken);
     }
 }

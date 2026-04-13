@@ -16,6 +16,7 @@ public sealed class LivePlotDbContext : DbContext
     public DbSet<Vote> Votes => Set<Vote>();
     public DbSet<Comment> Comments => Set<Comment>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
+    public DbSet<StoryRating> StoryRatings => Set<StoryRating>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -73,5 +74,15 @@ public sealed class LivePlotDbContext : DbContext
             .WithMany(st => st.Subscriptions)
             .HasForeignKey(s => s.StoryId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<StoryRating>()
+            .HasOne(r => r.User)
+            .WithMany(u => u.Ratings)
+            .HasForeignKey(r => r.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<StoryRating>()
+            .HasIndex(r => new { r.UserId, r.StoryId })
+            .IsUnique();
     }
 }

@@ -27,25 +27,33 @@ public sealed class StoryRepository : IStoryRepository
             .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Story>> GetAllAsync(CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<Story> Items, int TotalCount)> GetAllAsync(int skip, int take, CancellationToken cancellationToken)
     {
-        return await _db.Stories
+        var query = _db.Stories
             .Include(s => s.Author)
             .Include(s => s.Chapters)
             .AsNoTracking()
-            .OrderByDescending(s => s.CreatedAt)
-            .ToListAsync(cancellationToken);
+            .OrderByDescending(s => s.CreatedAt);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query.Skip(skip).Take(take).ToListAsync(cancellationToken);
+
+        return (items, totalCount);
     }
 
-    public async Task<IReadOnlyList<Story>> GetByAuthorAsync(int authorId, CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<Story> Items, int TotalCount)> GetByAuthorAsync(int authorId, int skip, int take, CancellationToken cancellationToken)
     {
-        return await _db.Stories
+        var query = _db.Stories
             .Include(s => s.Author)
             .Include(s => s.Chapters)
             .AsNoTracking()
             .Where(s => s.AuthorId == authorId)
-            .OrderByDescending(s => s.CreatedAt)
-            .ToListAsync(cancellationToken);
+            .OrderByDescending(s => s.CreatedAt);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query.Skip(skip).Take(take).ToListAsync(cancellationToken);
+
+        return (items, totalCount);
     }
 
     public async Task AddAsync(Story story, CancellationToken cancellationToken)

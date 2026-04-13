@@ -44,4 +44,20 @@ public sealed class SubscriptionRepository : ISubscriptionRepository
             .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<(IReadOnlyList<Story> Items, int TotalCount)> GetSubscribedStoriesAsync(int userId, int skip, int take, CancellationToken cancellationToken)
+    {
+        var query = _db.Subscriptions
+            .Include(s => s.Story)
+                .ThenInclude(story => story.Author)
+            .Include(s => s.Story)
+                .ThenInclude(story => story.Chapters)
+            .Where(s => s.UserId == userId)
+            .OrderByDescending(s => s.Story.CreatedAt);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query.Skip(skip).Take(take).Select(s => s.Story!).ToListAsync(cancellationToken);
+
+        return (items, totalCount);
+    }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using StoryMakerApi.Dtos;
 using StoryMakerApi.Dtos.Comment;
 using StoryMakerApi.Repositories;
 using StoryMakerApi.Services;
@@ -20,15 +21,16 @@ public class CommentController : BaseController
     [HttpGet]
     [SwaggerOperation(
         Summary = "Список комментариев истории",
-        Description = "Возвращает все комментарии к истории, отсортированные по времени (сначала новые).",
+        Description = "Возвращает комментарии с пагинацией, отсортированные по времени (сначала новые).",
         OperationId = "GetComments")]
-    [SwaggerResponse(200, "Список комментариев успешно получен", typeof(IReadOnlyList<CommentResponse>))]
-    [SwaggerResponse(404, "История не найдена")]
-    public async Task<ActionResult<IReadOnlyList<CommentResponse>>> GetAll(
+    [SwaggerResponse(200, "Список комментариев успешно получен", typeof(PagedResponse<CommentResponse>))]
+    public async Task<ActionResult<PagedResponse<CommentResponse>>> GetAll(
         [SwaggerParameter("ID истории", Required = true)] int storyId,
-        CancellationToken cancellationToken)
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
     {
-        var result = await _commentService.GetByStoryIdAsync(storyId, cancellationToken);
+        var result = await _commentService.GetByStoryIdAsync(storyId, page, pageSize, cancellationToken);
         return Ok(result);
     }
 

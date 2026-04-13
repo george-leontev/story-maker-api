@@ -28,24 +28,24 @@ public sealed class ChoiceService : IChoiceService
         ArgumentNullException.ThrowIfNull(request);
 
         if (string.IsNullOrWhiteSpace(request.Option1Text))
-            return Result<ChoiceResponse>.Failure("Option 1 text is required.");
+            return Result<ChoiceResponse>.Failure("Текст первого варианта обязателен.");
 
         if (string.IsNullOrWhiteSpace(request.Option2Text))
-            return Result<ChoiceResponse>.Failure("Option 2 text is required.");
+            return Result<ChoiceResponse>.Failure("Текст второго варианта обязателен.");
 
         if (request.DurationInMinutes < 1)
-            return Result<ChoiceResponse>.Failure("Duration must be at least 1 minute.");
+            return Result<ChoiceResponse>.Failure("Длительность должна быть не менее 1 минуты.");
 
         var chapter = await _chapterRepository.FindByIdAsync(chapterId, cancellationToken);
         if (chapter == null)
-            return Result<ChoiceResponse>.Failure("Chapter not found.");
+            return Result<ChoiceResponse>.Failure("Глава не найдена.");
 
         var story = await _storyRepository.FindByIdAsync(chapter.StoryId, cancellationToken);
         if (story == null || story.AuthorId != authorId)
-            return Result<ChoiceResponse>.Failure("You are not the author of this story.");
+            return Result<ChoiceResponse>.Failure("Вы не являетесь автором этой истории.");
 
         if (await _chapterRepository.HasChoiceAsync(chapterId, cancellationToken))
-            return Result<ChoiceResponse>.Failure("This chapter already has an active choice.");
+            return Result<ChoiceResponse>.Failure("У этой главы уже есть выбор.");
 
         var choice = new Models.Choice
         {
@@ -69,7 +69,7 @@ public sealed class ChoiceService : IChoiceService
     {
         var choice = await _choiceRepository.FindByIdAsync(id, cancellationToken);
         if (choice == null)
-            return Result<ChoiceResponse>.Failure("Choice not found.");
+            return Result<ChoiceResponse>.Failure("Выбор не найден.");
 
         await TryCloseExpiredChoiceAsync(choice, cancellationToken);
 
@@ -80,11 +80,11 @@ public sealed class ChoiceService : IChoiceService
     {
         var choice = await _choiceRepository.FindByIdAsync(id, cancellationToken);
         if (choice == null)
-            return Result<ChoiceAuthorResponse>.Failure("Choice not found.");
+            return Result<ChoiceAuthorResponse>.Failure("Выбор не найден.");
 
         var story = await _storyRepository.FindByIdAsync(choice.Chapter.StoryId, cancellationToken);
         if (story == null || story.AuthorId != authorId)
-            return Result<ChoiceAuthorResponse>.Failure("You are not the author of this story.");
+            return Result<ChoiceAuthorResponse>.Failure("Вы не являетесь автором этой истории.");
 
         await TryCloseExpiredChoiceAsync(choice, cancellationToken);
 
@@ -94,24 +94,24 @@ public sealed class ChoiceService : IChoiceService
     public async Task<Result<bool>> VoteAsync(int choiceId, int option, int userId, CancellationToken cancellationToken)
     {
         if (option != 1 && option != 2)
-            return Result<bool>.Failure("Invalid option. Must be 1 or 2.");
+            return Result<bool>.Failure("Неверный вариант. Должен быть 1 или 2.");
 
         var choice = await _choiceRepository.FindByIdForUpdateAsync(choiceId, cancellationToken);
         if (choice == null)
-            return Result<bool>.Failure("Choice not found.");
+            return Result<bool>.Failure("Выбор не найден.");
 
         if (choice.IsClosed)
-            return Result<bool>.Failure("This choice is closed. Voting is no longer available.");
+            return Result<bool>.Failure("Этот выбор закрыт. Голосование больше недоступно.");
 
         if (DateTime.UtcNow > choice.ExpiresAt)
         {
             _logger.LogInformation("Choice {ChoiceId} expired. Auto-closing on vote attempt.", choiceId);
             await _choiceRepository.CloseChoiceAsync(choice, cancellationToken);
-            return Result<bool>.Failure("This choice has expired. Vote not counted.");
+            return Result<bool>.Failure("Этот выбор истёк. Голос не засчитан.");
         }
 
         if (await _choiceRepository.HasVotedAsync(choiceId, userId, cancellationToken))
-            return Result<bool>.Failure("You have already voted on this choice.");
+            return Result<bool>.Failure("Вы уже проголосовали в этом выборе.");
 
         await _choiceRepository.RecordVoteAsync(choice, option, userId, cancellationToken);
 
@@ -133,6 +133,7 @@ public sealed class ChoiceService : IChoiceService
     {
         int? option1Votes = choice.IsClosed ? choice.Option1Votes : null;
         int? option2Votes = choice.IsClosed ? choice.Option2Votes : null;
+        int? winningOption = choice.IsClosed ? choice.WinningOption : null;
 
         return new ChoiceResponse(
             choice.Id,
@@ -141,6 +142,7 @@ public sealed class ChoiceService : IChoiceService
             choice.Option2Text,
             choice.ExpiresAt,
             choice.IsClosed,
+            winningOption,
             option1Votes,
             option2Votes);
     }
@@ -154,6 +156,7 @@ public sealed class ChoiceService : IChoiceService
             choice.Option2Text,
             choice.Option1Votes,
             choice.Option2Votes,
+            choice.WinningOption,
             choice.ExpiresAt,
             choice.IsClosed);
     }

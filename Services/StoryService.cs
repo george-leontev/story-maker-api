@@ -8,11 +8,13 @@ namespace StoryMakerApi.Services;
 public sealed class StoryService : IStoryService
 {
     private readonly IStoryRepository _storyRepository;
+    private readonly IRatingRepository _ratingRepository;
     private readonly ILogger<StoryService> _logger;
 
-    public StoryService(IStoryRepository storyRepository, ILogger<StoryService> logger)
+    public StoryService(IStoryRepository storyRepository, IRatingRepository ratingRepository, ILogger<StoryService> logger)
     {
         _storyRepository = storyRepository;
+        _ratingRepository = ratingRepository;
         _logger = logger;
     }
 
@@ -21,10 +23,10 @@ public sealed class StoryService : IStoryService
         ArgumentNullException.ThrowIfNull(request);
 
         if (string.IsNullOrWhiteSpace(request.Title))
-            return Result<StoryResponse>.Failure("Title is required.");
+            return Result<StoryResponse>.Failure("Название обязательно.");
 
         if (string.IsNullOrWhiteSpace(request.Description))
-            return Result<StoryResponse>.Failure("Description is required.");
+            return Result<StoryResponse>.Failure("Описание обязательно.");
 
         var story = new Story
         {
@@ -47,23 +49,30 @@ public sealed class StoryService : IStoryService
         var story = await _storyRepository.FindByIdAsync(id, cancellationToken);
 
         if (story == null)
-            return Result<StoryResponse>.Failure("Story not found.");
+            return Result<StoryResponse>.Failure("История не найдена.");
+
+        var avgRating = await _ratingRepository.GetAverageAsync(id, cancellationToken);
+        story.Rating = avgRating;
 
         return Result<StoryResponse>.Success(MapToResponse(story, story.Author!.Username));
     }
 
-    public async Task<IReadOnlyList<StoryResponse>> GetAllAsync(CancellationToken cancellationToken)
+    public async Task<PagedResponse<StoryResponse>> GetAllAsync(int page, int pageSize, CancellationToken cancellationToken)
     {
-        var stories = await _storyRepository.GetAllAsync(cancellationToken);
+        var skip = (page - 1) * pageSize;
+        var (items, totalCount) = await _storyRepository.GetAllAsync(skip, pageSize, cancellationToken);
 
-        return stories.Select(s => MapToResponse(s, s.Author!.Username)).ToList();
+        var stories = items.Select(s => MapToResponse(s, s.Author!.Username)).ToList();
+        return new PagedResponse<StoryResponse>(stories.AsReadOnly(), totalCount, page, pageSize);
     }
 
-    public async Task<IReadOnlyList<StoryResponse>> GetByAuthorAsync(int authorId, CancellationToken cancellationToken)
+    public async Task<PagedResponse<StoryResponse>> GetByAuthorAsync(int authorId, int page, int pageSize, CancellationToken cancellationToken)
     {
-        var stories = await _storyRepository.GetByAuthorAsync(authorId, cancellationToken);
+        var skip = (page - 1) * pageSize;
+        var (items, totalCount) = await _storyRepository.GetByAuthorAsync(authorId, skip, pageSize, cancellationToken);
 
-        return stories.Select(s => MapToResponse(s, s.Author!.Username)).ToList();
+        var stories = items.Select(s => MapToResponse(s, s.Author!.Username)).ToList();
+        return new PagedResponse<StoryResponse>(stories.AsReadOnly(), totalCount, page, pageSize);
     }
 
     public async Task<Result<StoryResponse>> UpdateAsync(int id, UpdateStoryRequest request, User author, CancellationToken cancellationToken)
@@ -71,18 +80,18 @@ public sealed class StoryService : IStoryService
         ArgumentNullException.ThrowIfNull(request);
 
         if (string.IsNullOrWhiteSpace(request.Title))
-            return Result<StoryResponse>.Failure("Title is required.");
+            return Result<StoryResponse>.Failure("Название обязательно.");
 
         if (string.IsNullOrWhiteSpace(request.Description))
-            return Result<StoryResponse>.Failure("Description is required.");
+            return Result<StoryResponse>.Failure("Описание обязательно.");
 
         var isAuthor = await _storyRepository.IsAuthorAsync(id, author.Id, cancellationToken);
         if (!isAuthor)
-            return Result<StoryResponse>.Failure("You are not the author of this story.");
+            return Result<StoryResponse>.Failure("Вы не являетесь автором этой истории.");
 
         var story = await _storyRepository.FindByIdForUpdateAsync(id, cancellationToken);
         if (story == null)
-            return Result<StoryResponse>.Failure("Story not found.");
+            return Result<StoryResponse>.Failure("История не найдена.");
 
         story.Title = request.Title;
         story.Description = request.Description;
@@ -97,7 +106,7 @@ public sealed class StoryService : IStoryService
     {
         var isAuthor = await _storyRepository.IsAuthorAsync(id, author.Id, cancellationToken);
         if (!isAuthor)
-            return Result<bool>.Failure("You are not the author of this story.");
+            return Result<bool>.Failure("Вы не являетесь автором этой истории.");
 
         await _storyRepository.DeleteAsync(id, cancellationToken);
 
@@ -108,6 +117,8 @@ public sealed class StoryService : IStoryService
 
     private static StoryResponse MapToResponse(Story story, string authorUsername)
     {
+        // Rating is computed from StoryRatings table, not from the Story.Rating field
+        // For list responses, we use the cached Story.Rating; for GetById, we compute live
         return new StoryResponse(
             story.Id,
             story.Title,

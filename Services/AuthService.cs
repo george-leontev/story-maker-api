@@ -30,32 +30,32 @@ public sealed class AuthService : IAuthService
 
         if (string.IsNullOrWhiteSpace(request.Username))
         {
-            return Result<AuthResponse>.Failure("Username is required.");
+            return Result<AuthResponse>.Failure("Имя пользователя обязательно.");
         }
 
         if (string.IsNullOrWhiteSpace(request.Email))
         {
-            return Result<AuthResponse>.Failure("Email is required.");
+            return Result<AuthResponse>.Failure("Email обязателен.");
         }
 
         if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 6)
         {
-            return Result<AuthResponse>.Failure("Password must be at least 6 characters.");
+            return Result<AuthResponse>.Failure("Пароль должен содержать не менее 6 символов.");
         }
 
         if (!request.Email.Contains("@"))
         {
-            return Result<AuthResponse>.Failure("Invalid email format.");
+            return Result<AuthResponse>.Failure("Неверный формат email.");
         }
 
         if (await _userRepository.ExistsByEmailAsync(request.Email, cancellationToken))
         {
-            return Result<AuthResponse>.Failure("Email is already registered.");
+            return Result<AuthResponse>.Failure("Этот email уже зарегистрирован.");
         }
 
         if (await _userRepository.ExistsByUsernameAsync(request.Username, cancellationToken))
         {
-            return Result<AuthResponse>.Failure("Username is already taken.");
+            return Result<AuthResponse>.Failure("Это имя пользователя уже занято.");
         }
 
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
@@ -81,19 +81,19 @@ public sealed class AuthService : IAuthService
 
         if (string.IsNullOrWhiteSpace(request.Email))
         {
-            return Result<AuthResponse>.Failure("Email is required.");
+            return Result<AuthResponse>.Failure("Email обязателен.");
         }
 
         if (string.IsNullOrWhiteSpace(request.Password))
         {
-            return Result<AuthResponse>.Failure("Password is required.");
+            return Result<AuthResponse>.Failure("Пароль обязателен.");
         }
 
         var user = await _userRepository.FindByEmailAsync(request.Email, cancellationToken);
 
         if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
-            return Result<AuthResponse>.Failure("Invalid email or password.");
+            return Result<AuthResponse>.Failure("Неверный email или пароль.");
         }
 
         _logger.LogInformation("User logged in: {UserId} ({Email})", user.Id, user.Email);

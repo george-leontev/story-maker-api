@@ -18,24 +18,23 @@ public sealed class ChapterRepository : IChapterRepository
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Chapter>> GetByStoryIdAsync(int storyId, CancellationToken cancellationToken)
+    public async Task<(IReadOnlyList<Chapter> Items, int TotalCount)> GetByStoryIdAsync(int storyId, int skip, int take, CancellationToken cancellationToken)
     {
-        return await _db.Chapters
+        var query = _db.Chapters
             .Include(c => c.Choice)
             .AsNoTracking()
             .Where(c => c.StoryId == storyId)
-            .OrderBy(c => c.SequenceNumber)
-            .ToListAsync(cancellationToken);
+            .OrderBy(c => c.SequenceNumber);
+
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query.Skip(skip).Take(take).ToListAsync(cancellationToken);
+
+        return (items, totalCount);
     }
 
     public async Task AddAsync(Chapter chapter, CancellationToken cancellationToken)
     {
         _db.Chapters.Add(chapter);
-        await _db.SaveChangesAsync(cancellationToken);
-    }
-
-    public async Task UpdateAsync(Chapter chapter, CancellationToken cancellationToken)
-    {
         await _db.SaveChangesAsync(cancellationToken);
     }
 
@@ -54,5 +53,20 @@ public sealed class ChapterRepository : IChapterRepository
         return await _db.Choices
             .AsNoTracking()
             .AnyAsync(c => c.ChapterId == chapterId, cancellationToken);
+    }
+
+    public async Task<bool> ExistsByStoryAndSequenceAsync(int storyId, int sequenceNumber, CancellationToken cancellationToken)
+    {
+        return await _db.Chapters
+            .AsNoTracking()
+            .AnyAsync(c => c.StoryId == storyId && c.SequenceNumber == sequenceNumber, cancellationToken);
+    }
+
+    public async Task<int> GetMaxSequenceNumberAsync(int storyId, CancellationToken cancellationToken)
+    {
+        return await _db.Chapters
+            .AsNoTracking()
+            .Where(c => c.StoryId == storyId)
+            .MaxAsync(c => (int?)c.SequenceNumber, cancellationToken) ?? 0;
     }
 }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using StoryMakerApi.Dtos;
 using StoryMakerApi.Dtos.Chapter;
 using StoryMakerApi.Repositories;
 using StoryMakerApi.Services;
@@ -20,14 +21,16 @@ public class ChapterController : BaseController
     [HttpGet]
     [SwaggerOperation(
         Summary = "Список всех глав истории",
-        Description = "Возвращает все главы, отсортированные по порядковому номеру.",
+        Description = "Возвращает главы с пагинацией, отсортированные по порядковому номеру.",
         OperationId = "GetAllChapters")]
-    [SwaggerResponse(200, "Список глав успешно получен", typeof(IReadOnlyList<ChapterResponse>))]
-    public async Task<ActionResult<IReadOnlyList<ChapterResponse>>> GetAll(
+    [SwaggerResponse(200, "Список глав успешно получен", typeof(PagedResponse<ChapterResponse>))]
+    public async Task<ActionResult<PagedResponse<ChapterResponse>>> GetAll(
         [SwaggerParameter("ID родительской истории", Required = true)] int storyId,
-        CancellationToken cancellationToken)
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
     {
-        var result = await _chapterService.GetByStoryIdAsync(storyId, cancellationToken);
+        var result = await _chapterService.GetByStoryIdAsync(storyId, page, pageSize, cancellationToken);
         return Ok(result);
     }
 
