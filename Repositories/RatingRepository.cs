@@ -13,13 +13,16 @@ public sealed class RatingRepository : IRatingRepository
     public async Task<StoryRating?> FindByUserAndStoryAsync(int userId, int storyId, CancellationToken cancellationToken)
     {
         return await _db.StoryRatings
-            .AsNoTracking()
             .FirstOrDefaultAsync(r => r.UserId == userId && r.StoryId == storyId, cancellationToken);
     }
 
     public async Task AddAsync(StoryRating rating, CancellationToken cancellationToken)
     {
-        _db.StoryRatings.Add(rating);
+        if (_db.Entry(rating).State == EntityState.Detached)
+        {
+            _db.StoryRatings.Add(rating);
+        }
+        
         await _db.SaveChangesAsync(cancellationToken);
     }
 

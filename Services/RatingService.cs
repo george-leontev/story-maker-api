@@ -18,7 +18,7 @@ public sealed class RatingService : IRatingService
 
     public async Task<Result<RatingResponse>> RateAsync(int storyId, int userId, int score, CancellationToken cancellationToken)
     {
-        var story = await _storyRepository.FindByIdAsync(storyId, cancellationToken);
+        var story = await _storyRepository.FindByIdForUpdateAsync(storyId, cancellationToken);
         if (story is null)
             return Result<RatingResponse>.Failure("История не найдена.");
 
@@ -46,12 +46,16 @@ public sealed class RatingService : IRatingService
         var avg = await _ratingRepository.GetAverageAsync(storyId, cancellationToken);
         var count = await _ratingRepository.GetCountAsync(storyId, cancellationToken);
 
+        // Update cached rating in Stories table
+        story.Rating = avg;
+        await _storyRepository.UpdateAsync(story, cancellationToken);
+
         return Result<RatingResponse>.Success(new RatingResponse(storyId, avg, count, score));
     }
 
     public async Task<Result> RemoveRatingAsync(int storyId, int userId, CancellationToken cancellationToken)
     {
-        var story = await _storyRepository.FindByIdAsync(storyId, cancellationToken);
+        var story = await _storyRepository.FindByIdForUpdateAsync(storyId, cancellationToken);
         if (story is null)
             return Result.Failure("История не найдена.");
 
@@ -60,6 +64,13 @@ public sealed class RatingService : IRatingService
             return Result.Failure("Вы не оценивали эту историю.");
 
         await _ratingRepository.DeleteAsync(existing, cancellationToken);
+
+        var avg = await _ratingRepository.GetAverageAsync(storyId, cancellationToken);
+        
+        // Update cached rating in Stories table
+        story.Rating = avg;
+        await _storyRepository.UpdateAsync(story, cancellationToken);
+
         return Result.Success();
     }
 
