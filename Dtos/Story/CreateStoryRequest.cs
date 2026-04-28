@@ -1,3 +1,3 @@
 namespace StoryMakerApi.Dtos.Story;
 
-public sealed record CreateStoryRequest(string Title, string Description);
+public sealed record CreateStoryRequest(string Title, string Description, string? CoverImageUrl);

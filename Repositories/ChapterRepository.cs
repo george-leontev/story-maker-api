@@ -48,6 +48,11 @@ public sealed class ChapterRepository : IChapterRepository
         }
     }
 
+    public async Task UpdateAsync(Chapter chapter, CancellationToken cancellationToken)
+    {
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task<bool> HasChoiceAsync(int chapterId, CancellationToken cancellationToken)
     {
         return await _db.Choices

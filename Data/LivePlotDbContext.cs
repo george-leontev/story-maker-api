@@ -39,6 +39,12 @@ public sealed class LivePlotDbContext : DbContext
             .HasForeignKey(s => s.AuthorId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<Chapter>()
+            .HasOne(c => c.Story)
+            .WithMany(s => s.Chapters)
+            .HasForeignKey(c => c.StoryId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         modelBuilder.Entity<Comment>()
             .HasOne(c => c.Story)
             .WithMany(s => s.Comments)
@@ -80,6 +86,12 @@ public sealed class LivePlotDbContext : DbContext
             .WithMany(u => u.Ratings)
             .HasForeignKey(r => r.UserId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<StoryRating>()
+            .HasOne(r => r.Story)
+            .WithMany(s => s.Ratings)
+            .HasForeignKey(r => r.StoryId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<StoryRating>()
             .HasIndex(r => new { r.UserId, r.StoryId })

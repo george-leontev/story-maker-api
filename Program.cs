@@ -1,6 +1,7 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using StoryMakerApi.Data;
@@ -39,6 +40,12 @@ if (!string.IsNullOrWhiteSpace(envJwtSecret))
 }
 
 builder.Services.Configure<JwtSettings>(jwtSection);
+
+// Configure max request size for file uploads
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.Limits.MaxRequestBodySize = 10 * 1024 * 1024; // 10MB limit
+});
 
 // Database
 builder.Services.AddDbContext<LivePlotDbContext>(options =>
@@ -93,6 +100,15 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.EnableAnnotations();
 
+    // Handle IFormFile for file uploads
+    options.SchemaGeneratorOptions.CustomTypeMappings.Add(
+        typeof(IFormFile),
+        () => new OpenApiSchema
+        {
+            Type = "string",
+            Format = "binary"
+        });
+
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -129,6 +145,15 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Enable static files for serving uploaded images
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(app.Environment.ContentRootPath, "data")),
+    RequestPath = "/data"
+});
+
 app.UseAuthentication();
 app.UseAuthorization();
 

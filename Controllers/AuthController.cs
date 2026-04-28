@@ -17,14 +17,18 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     [SwaggerOperation(
         Summary = "Регистрация нового пользователя",
-        Description = "Создаёт учётную запись пользователя и возвращает JWT-токен для аутентификации.",
+        Description = "Создаёт учётную запись пользователя и возвращает JWT-токен для аутентификации. Можно загрузить аватар.",
         OperationId = "Register")]
     [SwaggerResponse(200, "Регистрация прошла успешно. Возвращает JWT-токен и время истечения.", typeof(AuthResponse))]
     [SwaggerResponse(400, "Ошибка валидации или такой username/email уже занят")]
     public async Task<ActionResult<AuthResponse>> Register(
-        [SwaggerParameter("Данные для регистрации", Required = true)] [FromBody] RegisterRequest request,
+        [SwaggerParameter("Имя пользователя", Required = true)] string username,
+        [SwaggerParameter("Email", Required = true)] string email,
+        [SwaggerParameter("Пароль", Required = true)] string password,
+        [SwaggerParameter("Аватар (опционально)")] IFormFile? avatar,
         CancellationToken cancellationToken)
     {
+        var request = new RegisterRequest(username, email, password, avatar);
         var result = await _authService.RegisterAsync(request, cancellationToken);
         return result.IsSuccess
             ? Ok(result.Value)

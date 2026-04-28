@@ -95,6 +95,37 @@ public sealed class ChapterService : IChapterService
         return Result<bool>.Success(true);
     }
 
+    public async Task<Result<ChapterResponse>> UpdateAsync(int id, UpdateChapterRequest request, int authorId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (string.IsNullOrWhiteSpace(request.Content))
+            return Result<ChapterResponse>.Failure("Содержимое главы обязательно.");
+
+        var chapter = await _chapterRepository.FindByIdAsync(id, cancellationToken);
+        if (chapter == null)
+            return Result<ChapterResponse>.Failure("Глава не найдена.");
+
+        var story = await _storyRepository.FindByIdAsync(chapter.StoryId, cancellationToken);
+        if (story == null || story.AuthorId != authorId)
+            return Result<ChapterResponse>.Failure("Вы не являетесь автором этой истории.");
+
+        if (request.SequenceNumber.HasValue)
+        {
+            var duplicateExists = await _chapterRepository.ExistsByStoryAndSequenceAsync(chapter.StoryId, request.SequenceNumber.Value, cancellationToken);
+            if (duplicateExists && chapter.SequenceNumber != request.SequenceNumber.Value)
+                return Result<ChapterResponse>.Failure($"Глава с порядковым номером {request.SequenceNumber} уже существует в этой истории.");
+            chapter.SequenceNumber = request.SequenceNumber.Value;
+        }
+
+        chapter.Content = request.Content;
+        await _chapterRepository.UpdateAsync(chapter, cancellationToken);
+
+        _logger.LogInformation("Chapter updated: {ChapterId} by Author: {AuthorId}", id, authorId);
+
+        return Result<ChapterResponse>.Success(MapToResponse(chapter));
+    }
+
     private static ChapterResponse MapToResponse(Chapter chapter)
     {
         return new ChapterResponse(

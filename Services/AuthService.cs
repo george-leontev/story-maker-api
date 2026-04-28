@@ -13,15 +13,18 @@ public sealed class AuthService : IAuthService
     private readonly IUserRepository _userRepository;
     private readonly JwtSettings _jwtSettings;
     private readonly ILogger<AuthService> _logger;
+    private readonly IWebHostEnvironment _env;
 
     public AuthService(
         IUserRepository userRepository,
         IOptions<JwtSettings> jwtSettings,
-        ILogger<AuthService> logger)
+        ILogger<AuthService> logger,
+        IWebHostEnvironment env)
     {
         _userRepository = userRepository;
         _jwtSettings = jwtSettings.Value;
         _logger = logger;
+        _env = env;
     }
 
     public async Task<Result<AuthResponse>> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken)
@@ -60,11 +63,18 @@ public sealed class AuthService : IAuthService
 
         var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
+        string? avatarImageUrl = null;
+        if (request.Avatar != null)
+        {
+            avatarImageUrl = await SaveAvatarAsync(request.Avatar, cancellationToken);
+        }
+
         var user = new User
         {
             Username = request.Username,
             Email = request.Email,
             PasswordHash = passwordHash,
+            AvatarImageUrl = avatarImageUrl,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -105,5 +115,24 @@ public sealed class AuthService : IAuthService
     {
         var (token, expiresAt) = JwtHelper.GenerateToken(user, _jwtSettings);
         return new AuthResponse(token, expiresAt);
+    }
+
+    private async Task<string> SaveAvatarAsync(IFormFile avatar, CancellationToken cancellationToken)
+    {
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp" };
+        var fileExtension = Path.GetExtension(avatar.FileName).ToLowerInvariant();
+
+        if (!allowedExtensions.Contains(fileExtension))
+            throw new ArgumentException("Разрешены только изображения: JPG, PNG, WEBP");
+
+        var fileName = $"{Guid.NewGuid()}{fileExtension}";
+        var filePath = Path.Combine(_env.ContentRootPath, "data", "avatars", fileName);
+
+        Directory.CreateDirectory(Path.Combine(_env.ContentRootPath, "data", "avatars"));
+
+        await using var stream = new FileStream(filePath, FileMode.Create);
+        await avatar.CopyToAsync(stream, cancellationToken);
+
+        return $"/data/avatars/{fileName}";
     }
 }
