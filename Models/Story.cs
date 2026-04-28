@@ -5,6 +5,7 @@ public sealed class Story
     public int Id { get; init; }
     public string Title { get; internal set; } = string.Empty;
     public string Description { get; internal set; } = string.Empty;
+    public string? CoverImageUrl { get; internal set; }
     public int AuthorId { get; init; }
     public float Rating { get; internal set; }
     public DateTime CreatedAt { get; init; }

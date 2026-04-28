@@ -91,4 +91,25 @@ public class ChapterController : BaseController
             ? NoContent()
             : BadRequest(new { error = result.Error });
     }
+
+    [HttpPut("{id:int}")]
+    [Authorize]
+    [SwaggerOperation(
+        Summary = "Обновить главу",
+        Description = "Обновляет содержимое и/или порядковый номер главы. Только автор истории может обновлять.",
+        OperationId = "UpdateChapter")]
+    [SwaggerResponse(200, "Глава обновлена", typeof(ChapterResponse))]
+    [SwaggerResponse(400, "Ошибка валидации или пользователь не является автором")]
+    public async Task<ActionResult<ChapterResponse>> Update(
+        [SwaggerParameter("ID родительской истории", Required = true)] int storyId,
+        [SwaggerParameter("ID главы", Required = true)] int id,
+        [SwaggerParameter("Содержимое и/или порядковый номер", Required = true)] [FromBody] UpdateChapterRequest request,
+        CancellationToken cancellationToken)
+    {
+        var authorId = GetCurrentUserId();
+        var result = await _chapterService.UpdateAsync(id, request, authorId, cancellationToken);
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : BadRequest(new { error = result.Error });
+    }
 }
