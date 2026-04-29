@@ -8,6 +8,7 @@ using StoryMakerApi.Data;
 using StoryMakerApi.Repositories;
 using StoryMakerApi.Services;
 using StoryMakerApi.Settings;
+using Microsoft.Data.SqlClient; // Обязательно добавьте этот using
 
 DotNetEnv.Env.Load();
 
@@ -17,7 +18,15 @@ var dbName = Environment.GetEnvironmentVariable("DB_NAME");
 var dbUser = Environment.GetEnvironmentVariable("DB_USER");
 var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
 
-var connectionString = $"Server={dbServer},{dbPort};Database={dbName};User Id={dbUser};Password={dbPassword};TrustServerCertificate=True;MultipleActiveResultSets=true";
+var connBuilder = new SqlConnectionStringBuilder
+{
+    DataSource = string.IsNullOrEmpty(dbPort) ? dbServer : $"{dbServer},{dbPort}",
+    InitialCatalog = dbName,
+    // ВАЖНО: Вместо User Id и Password используем Windows Authentication
+    IntegratedSecurity = true, 
+    TrustServerCertificate = true,
+    MultipleActiveResultSets = true
+};
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,7 +49,7 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
 
 // Database
 builder.Services.AddDbContext<LivePlotDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connBuilder.ConnectionString));
 
 // Authentication
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
