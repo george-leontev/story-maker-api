@@ -126,13 +126,13 @@ public sealed class AuthService : IAuthService
             throw new ArgumentException("Разрешены только изображения: JPG, PNG, WEBP");
 
         var fileName = $"{Guid.NewGuid()}{fileExtension}";
-        var filePath = Path.Combine(_env.ContentRootPath, "data", "avatars", fileName);
+        var filePath = Path.Combine(_env.ContentRootPath, "uploads", "avatars", fileName);
 
-        Directory.CreateDirectory(Path.Combine(_env.ContentRootPath, "data", "avatars"));
+        Directory.CreateDirectory(Path.Combine(_env.ContentRootPath, "uploads", "avatars"));
 
         await using var stream = new FileStream(filePath, FileMode.Create);
         await avatar.CopyToAsync(stream, cancellationToken);
 
-        return $"/data/avatars/{fileName}";
+        return $"/uploads/avatars/{fileName}";
     }
 }

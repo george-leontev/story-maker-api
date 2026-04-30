@@ -171,15 +171,14 @@ public sealed class StoryService : IStoryService
             throw new ArgumentException("Разрешены только изображения: JPG, PNG, WEBP");
 
         var fileName = $"{Guid.NewGuid()}{fileExtension}";
-        var filePath = Path.Combine(_env.ContentRootPath, "data", "covers", fileName);
+        var filePath = Path.Combine(_env.ContentRootPath, "uploads", "covers", fileName);
 
-        // Ensure directory exists
-        Directory.CreateDirectory(Path.Combine(_env.ContentRootPath, "data", "covers"));
+        Directory.CreateDirectory(Path.Combine(_env.ContentRootPath, "uploads", "covers"));
 
         await using var stream = new FileStream(filePath, FileMode.Create);
         await image.CopyToAsync(stream, cancellationToken);
 
-        return $"/data/covers/{fileName}";
+        return $"/uploads/covers/{fileName}";
     }
 
     private static StoryResponse MapToResponse(Story story, string authorUsername)

@@ -5,28 +5,12 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using StoryMakerApi.Data;
+using StoryMakerApi.Helpers;
 using StoryMakerApi.Repositories;
 using StoryMakerApi.Services;
 using StoryMakerApi.Settings;
-using Microsoft.Data.SqlClient; // Обязательно добавьте этот using
 
 DotNetEnv.Env.Load();
-
-var dbServer = Environment.GetEnvironmentVariable("DB_SERVER");
-var dbPort = Environment.GetEnvironmentVariable("DB_PORT");
-var dbName = Environment.GetEnvironmentVariable("DB_NAME");
-var dbUser = Environment.GetEnvironmentVariable("DB_USER");
-var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
-
-var connBuilder = new SqlConnectionStringBuilder
-{
-    DataSource = string.IsNullOrEmpty(dbPort) ? dbServer : $"{dbServer},{dbPort}",
-    InitialCatalog = dbName,
-    // ВАЖНО: Вместо User Id и Password используем Windows Authentication
-    IntegratedSecurity = true, 
-    TrustServerCertificate = true,
-    MultipleActiveResultSets = true
-};
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +22,12 @@ if (!string.IsNullOrWhiteSpace(envJwtSecret))
 {
     jwtSection["Secret"] = envJwtSecret;
 }
+else if (builder.Environment.IsDevelopment())
+{
+    // Для разработки, если нет JWT_SECRET в .env
+    jwtSection["Secret"] = "DevSecretKeyThatIsAtLeast32CharactersLong123456";
+    Console.WriteLine("⚠️  JWT_SECRET not set. Using development default secret (NOT FOR PRODUCTION).");
+}
 
 builder.Services.Configure<JwtSettings>(jwtSection);
 
@@ -47,9 +37,9 @@ builder.WebHost.ConfigureKestrel(serverOptions =>
     serverOptions.Limits.MaxRequestBodySize = 10 * 1024 * 1024; // 10MB limit
 });
 
-// Database
+// Database - использовать единый хелпер для строки подключения
 builder.Services.AddDbContext<LivePlotDbContext>(options =>
-    options.UseSqlServer(connBuilder.ConnectionString));
+    options.UseSqlServer(DbConnectionStringBuilder.BuildFromEnvironment()));
 
 // Authentication
 var jwtSettings = builder.Configuration.GetSection(JwtSettings.SectionName).Get<JwtSettings>()
@@ -150,8 +140,8 @@ app.UseHttpsRedirection();
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(
-        Path.Combine(app.Environment.ContentRootPath, "data")),
-    RequestPath = "/data"
+        Path.Combine(app.Environment.ContentRootPath, "uploads")),
+    RequestPath = "/uploads"
 });
 
 app.UseAuthentication();
