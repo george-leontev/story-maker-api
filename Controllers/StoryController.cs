@@ -68,6 +68,7 @@ public class StoryController : BaseController
     }
 
     [HttpPost]
+    [Consumes("multipart/form-data")]
     [SwaggerOperation(
         Summary = "Создать новую историю",
         Description = "Создаёт историю для аутентифицированного пользователя. Можно прикрепить обложку.",
@@ -75,20 +76,19 @@ public class StoryController : BaseController
     [SwaggerResponse(201, "История создана", typeof(StoryResponse))]
     [SwaggerResponse(400, "Ошибка валидации")]
     public async Task<ActionResult<StoryResponse>> Create(
-        [SwaggerParameter("Заголовок истории", Required = true)] string title,
-        [SwaggerParameter("Описание истории", Required = true)] string description,
-        [SwaggerParameter("Обложка истории (опционально)")] IFormFile? coverImage,
+        [FromForm] CreateStoryFormRequest form,
         CancellationToken cancellationToken)
     {
         var user = await GetCurrentUserAsync(cancellationToken);
-        var request = new CreateStoryRequest(title, description, null);
-        var result = await _storyService.CreateAsync(request, user, coverImage, cancellationToken);
+        var request = new CreateStoryRequest(form.Title, form.Description, null);
+        var result = await _storyService.CreateAsync(request, user, form.CoverImage, cancellationToken);
         return result.IsSuccess
             ? CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result.Value)
             : BadRequest(new { error = result.Error });
     }
 
     [HttpPut("{id:int}")]
+    [Consumes("multipart/form-data")]
     [SwaggerOperation(
         Summary = "Обновить историю",
         Description = "Обновляет название, описание и обложку. Только автор может редактировать.",
@@ -97,14 +97,12 @@ public class StoryController : BaseController
     [SwaggerResponse(400, "Ошибка валидации или пользователь не является автором")]
     public async Task<ActionResult<StoryResponse>> Update(
         [SwaggerParameter("ID истории", Required = true)] int id,
-        [SwaggerParameter("Заголовок истории", Required = true)] string title,
-        [SwaggerParameter("Описание истории", Required = true)] string description,
-        [SwaggerParameter("Новая обложка (опционально)")] IFormFile? coverImage,
+        [FromForm] UpdateStoryFormRequest form,
         CancellationToken cancellationToken)
     {
         var user = await GetCurrentUserAsync(cancellationToken);
-        var request = new UpdateStoryRequest(title, description, null);
-        var result = await _storyService.UpdateAsync(id, request, user, coverImage, cancellationToken);
+        var request = new UpdateStoryRequest(form.Title, form.Description, null);
+        var result = await _storyService.UpdateAsync(id, request, user, form.CoverImage, cancellationToken);
         return result.IsSuccess
             ? Ok(result.Value)
             : BadRequest(new { error = result.Error });

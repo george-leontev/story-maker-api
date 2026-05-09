@@ -1,0 +1,16 @@
+services:
+  database:
+    container_name: sql-server-database
+    image: mcr.microsoft.com/mssql/server
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=abcd1234_efg
+      - MSSQL_PID=Developer
+    ports:
+      - 11433:1433
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P abcd1234_efg -C -Q 'SELECT 1'"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
