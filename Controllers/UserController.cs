@@ -136,6 +136,22 @@ public class UserController : BaseController
         return Ok(result);
     }
 
+    [HttpGet("author-votes")]
+    [SwaggerOperation(
+        Summary = "Голосования в моих историях",
+        Description = "Возвращает все голосования (выборы) из глав историй автора с результатами.",
+        OperationId = "GetAuthorVotes")]
+    [SwaggerResponse(200, "Голосования получены", typeof(PagedResponse<VoteHistoryResponse>))]
+    public async Task<ActionResult<PagedResponse<VoteHistoryResponse>>> GetAuthorVotes(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = GetCurrentUserId();
+        var result = await _userService.GetAuthorVotesAsync(userId, page, pageSize, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpDelete]
     [SwaggerOperation(
         Summary = "Удалить аккаунт",

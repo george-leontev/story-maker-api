@@ -225,4 +225,69 @@ public sealed class UserService : IUserService
 
         return new PagedResponse<StoryListItem>(storyList.AsReadOnly(), totalCount, page, pageSize);
     }
+
+    public async Task<PagedResponse<VoteHistoryResponse>> GetAuthorVotesAsync(int userId, int page, int pageSize, CancellationToken cancellationToken)
+    {
+        // Получаем все истории автора
+        var (stories, _) = await _storyRepository.GetByAuthorAsync(userId, 0, 1000, cancellationToken);
+        
+        var allVotes = new List<VoteHistoryResponse>();
+        var now = DateTime.UtcNow;
+        
+        foreach (var story in stories)
+        {
+            if (story.Chapters == null || story.Chapters.Count == 0) continue;
+            
+            // Для каждой главы получаем голосование (одиночный Choice)
+            foreach (var chapter in story.Chapters)
+            {
+                if (chapter.Choice == null) continue;
+                
+                var choice = chapter.Choice;
+                
+                // Проверяем, истёк ли срок голосования
+                bool isClosed = choice.IsClosed || (choice.ExpiresAt <= now);
+                
+                // Если голосование закрылось по времени, но флаг не установлен - обновляем в БД
+                if (isClosed && !choice.IsClosed)
+                {
+                    choice.IsClosed = true;
+                    // Определяем победителя
+                    if (choice.Option1Votes > choice.Option2Votes)
+                        choice.WinningOption = 1;
+                    else if (choice.Option2Votes > choice.Option1Votes)
+                        choice.WinningOption = 2;
+                    // Если ничья - WinningOption остаётся null
+                
+                    // Сохраняем изменения
+                    await _storyRepository.UpdateChoiceAsync(choice, cancellationToken);
+                }
+                
+                // Показываем все голосования (и активные, и завершённые)
+                allVotes.Add(new VoteHistoryResponse(
+                    choice.Id,
+                    chapter.Id,
+                    story.Id,
+                    story.Title,
+                    chapter.Title ?? $"Глава {chapter.SequenceNumber}",
+                    0, // SelectedOption - для автора не важно
+                    choice.Option1Text + "\n" + choice.Option2Text, // Сохраняем оба варианта
+                    isClosed,
+                    choice.WinningOption,
+                    choice.Option1Votes,
+                    choice.Option2Votes,
+                    choice.ExpiresAt
+                ));
+            }
+        }
+        
+        // Сортируем по дате истечения (сначала самые новые)
+        allVotes = allVotes
+            .OrderByDescending(v => v.VotedAt)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+        
+        return new PagedResponse<VoteHistoryResponse>(allVotes.AsReadOnly(), allVotes.Count, page, pageSize);
+    }
 }

@@ -13,4 +13,5 @@ public interface IUserService
     Task<Result> DeleteAccountAsync(int userId, CancellationToken cancellationToken);
     Task<PagedResponse<VoteHistoryResponse>> GetVoteHistoryAsync(int userId, int page, int pageSize, CancellationToken cancellationToken);
     Task<PagedResponse<StoryListItem>> GetMyStoriesAsync(int userId, int page, int pageSize, CancellationToken cancellationToken);
+    Task<PagedResponse<VoteHistoryResponse>> GetAuthorVotesAsync(int userId, int page, int pageSize, CancellationToken cancellationToken);
 }

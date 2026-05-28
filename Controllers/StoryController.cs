@@ -15,9 +15,14 @@ namespace StoryMakerApi.Controllers;
 public class StoryController : BaseController
 {
     private readonly IStoryService _storyService;
+    private readonly ILogger<StoryController> _logger;
 
-    public StoryController(IUserRepository userRepository, IStoryService storyService)
-        : base(userRepository) => _storyService = storyService;
+    public StoryController(IUserRepository userRepository, IStoryService storyService, ILogger<StoryController> logger)
+        : base(userRepository)
+    {
+        _storyService = storyService;
+        _logger = logger;
+    }
 
     [HttpGet]
     [SwaggerOperation(

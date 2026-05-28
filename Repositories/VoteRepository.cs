@@ -32,4 +32,11 @@ public sealed class VoteRepository : IVoteRepository
         return await _db.Votes
             .AnyAsync(v => v.ChoiceId == choiceId && v.UserId == userId, cancellationToken);
     }
+
+    public async Task<IReadOnlyList<Vote>> GetByChoiceAsync(int choiceId, CancellationToken cancellationToken)
+    {
+        return await _db.Votes
+            .Where(v => v.ChoiceId == choiceId)
+            .ToListAsync(cancellationToken);
+    }
 }

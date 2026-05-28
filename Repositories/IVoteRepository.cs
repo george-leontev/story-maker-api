@@ -7,6 +7,7 @@ public interface IVoteRepository
 {
     Task<PagedResult<Vote>> GetVotesByUserAsync(int userId, int skip, int take, CancellationToken cancellationToken);
     Task<bool> HasVotedAsync(int choiceId, int userId, CancellationToken cancellationToken);
+    Task<IReadOnlyList<Vote>> GetByChoiceAsync(int choiceId, CancellationToken cancellationToken);
 }
 
 public class PagedResult<T>
