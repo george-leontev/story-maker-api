@@ -7,11 +7,11 @@ public sealed class CreateStoryFormRequest
 {
     [FromForm(Name = "title")]
     [SwaggerSchema("Заголовок истории")]
-    public string Title { get; set; } = string.Empty;
+    public string? Title { get; set; }
 
     [FromForm(Name = "description")]
     [SwaggerSchema("Описание истории")]
-    public string Description { get; set; } = string.Empty;
+    public string? Description { get; set; }
 
     [FromForm(Name = "coverImage")]
     [SwaggerSchema("Обложка истории (опционально)")]

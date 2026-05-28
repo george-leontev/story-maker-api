@@ -76,6 +76,17 @@ public sealed class ChoiceService : IChoiceService
         return Result<ChoiceResponse>.Success(MapToPublicResponse(choice));
     }
 
+    public async Task<Result<ChoiceResponse>> GetByChapterIdAsync(int chapterId, CancellationToken cancellationToken)
+    {
+        var choice = await _choiceRepository.FindByChapterIdAsync(chapterId, cancellationToken);
+        if (choice == null)
+            return Result<ChoiceResponse>.Failure("Выбор для этой главы не найден.");
+
+        await TryCloseExpiredChoiceAsync(choice, cancellationToken);
+
+        return Result<ChoiceResponse>.Success(MapToPublicResponse(choice));
+    }
+
     public async Task<Result<ChoiceAuthorResponse>> GetAuthorViewAsync(int id, int authorId, CancellationToken cancellationToken)
     {
         var choice = await _choiceRepository.FindByIdAsync(id, cancellationToken);

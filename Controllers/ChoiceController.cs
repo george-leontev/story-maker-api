@@ -57,6 +57,23 @@ public class ChoiceController : BaseController
             : NotFound(new { error = result.Error });
     }
 
+    [HttpGet]
+    [SwaggerOperation(
+        Summary = "Получить выбор для главы (просмотр читателем)",
+        Description = "Возвращает выбор для указанной главы по chapterId. Счётчики голосов скрыты, пока выбор активен.",
+        OperationId = "GetChoiceByChapterId")]
+    [SwaggerResponse(200, "Выбор найден. Счётчики голосов могут быть null, если выбор ещё активен.", typeof(ChoiceResponse))]
+    [SwaggerResponse(404, "Выбор не найден")]
+    public async Task<ActionResult<ChoiceResponse>> GetByChapter(
+        [SwaggerParameter("ID главы", Required = true)] int chapterId,
+        CancellationToken cancellationToken)
+    {
+        var result = await _choiceService.GetByChapterIdAsync(chapterId, cancellationToken);
+        return result.IsSuccess
+            ? Ok(result.Value)
+            : NotFound(new { error = result.Error });
+    }
+
     [HttpGet("{id:int}/author")]
     [Authorize]
     [SwaggerOperation(
@@ -84,9 +101,9 @@ public class ChoiceController : BaseController
         Description = "Записывает голос за вариант 1 или 2. Каждый пользователь может проголосовать только один раз. " +
                       "Счётчики голосов скрыты до истечения таймера.",
         OperationId = "Vote")]
-    [SwaggerResponse(200, "Голос успешно записан")]
+    [SwaggerResponse(200, "Голос успешно записан", typeof(ChoiceResponse))]
     [SwaggerResponse(400, "Пользователь уже проголосовал, выбор закрыт или истёк")]
-    public async Task<ActionResult> Vote(
+    public async Task<ActionResult<ChoiceResponse>> Vote(
         [SwaggerParameter("ID родительской главы", Required = true)] int chapterId,
         [SwaggerParameter("ID выбора", Required = true)] int id,
         [SwaggerParameter("Вариант для голосования: 1 или 2", Required = true)] [FromBody] VoteRequest request,
@@ -94,9 +111,15 @@ public class ChoiceController : BaseController
     {
         var userId = GetCurrentUserId();
         var result = await _choiceService.VoteAsync(id, request.Option, userId, cancellationToken);
-        return result.IsSuccess
-            ? Ok(new { message = "Голос записан." })
-            : BadRequest(new { error = result.Error });
+        if (result.IsSuccess)
+        {
+            // Возвращаем обновлённый выбор
+            var choiceResult = await _choiceService.GetPublicAsync(id, cancellationToken);
+            return choiceResult.IsSuccess
+                ? Ok(choiceResult.Value)
+                : Ok(new ChoiceResponse(id, 0, "", "", DateTime.UtcNow, false, null, null, null));
+        }
+        return BadRequest(new { error = result.Error });
     }
 }
 

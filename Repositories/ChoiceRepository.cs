@@ -25,6 +25,14 @@ public sealed class ChoiceRepository : IChoiceRepository
             .FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
     }
 
+    public async Task<Choice?> FindByChapterIdAsync(int chapterId, CancellationToken cancellationToken)
+    {
+        return await _db.Choices
+            .Include(c => c.Chapter)
+            .AsNoTracking()
+            .FirstOrDefaultAsync(c => c.ChapterId == chapterId, cancellationToken);
+    }
+
     public async Task<bool> HasVotedAsync(int choiceId, int userId, CancellationToken cancellationToken)
     {
         return await _db.Votes

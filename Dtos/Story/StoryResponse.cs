@@ -5,6 +5,7 @@ public sealed record StoryResponse(
     string Title,
     string Description,
     string? CoverImageUrl,
+    int AuthorId,
     string AuthorUsername,
     float Rating,
     DateTime CreatedAt,

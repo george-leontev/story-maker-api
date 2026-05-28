@@ -76,15 +76,34 @@ public class StoryController : BaseController
     [SwaggerResponse(201, "История создана", typeof(StoryResponse))]
     [SwaggerResponse(400, "Ошибка валидации")]
     public async Task<ActionResult<StoryResponse>> Create(
-        [FromForm] CreateStoryFormRequest form,
+        [FromForm(Name = "title")] string? title,
+        [FromForm(Name = "description")] string? description,
+        [FromForm(Name = "coverImage")] IFormFile? coverImage,
         CancellationToken cancellationToken)
     {
-        var user = await GetCurrentUserAsync(cancellationToken);
-        var request = new CreateStoryRequest(form.Title, form.Description, null);
-        var result = await _storyService.CreateAsync(request, user, form.CoverImage, cancellationToken);
-        return result.IsSuccess
-            ? CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result.Value)
-            : BadRequest(new { error = result.Error });
+        _logger.LogInformation("CreateStory called: title={Title}, description={DescLength}, coverImage={CoverSize}", 
+            title, description?.Length, coverImage?.Length);
+
+        if (string.IsNullOrWhiteSpace(title))
+            return BadRequest(new { error = "Заголовок истории обязателен." });
+
+        if (string.IsNullOrWhiteSpace(description))
+            return BadRequest(new { error = "Описание истории обязательно." });
+
+        try
+        {
+            var user = await GetCurrentUserAsync(cancellationToken);
+            var request = new CreateStoryRequest(title!, description!, null);
+            var result = await _storyService.CreateAsync(request, user, coverImage, cancellationToken);
+            return result.IsSuccess
+                ? CreatedAtAction(nameof(GetById), new { id = result.Value!.Id }, result.Value)
+                : BadRequest(new { error = result.Error });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating story");
+            return BadRequest(new { error = "Внутренняя ошибка сервера: " + ex.Message });
+        }
     }
 
     [HttpPut("{id:int}")]
@@ -97,12 +116,14 @@ public class StoryController : BaseController
     [SwaggerResponse(400, "Ошибка валидации или пользователь не является автором")]
     public async Task<ActionResult<StoryResponse>> Update(
         [SwaggerParameter("ID истории", Required = true)] int id,
-        [FromForm] UpdateStoryFormRequest form,
+        [FromForm] string title,
+        [FromForm] string description,
+        [FromForm] IFormFile? coverImage,
         CancellationToken cancellationToken)
     {
         var user = await GetCurrentUserAsync(cancellationToken);
-        var request = new UpdateStoryRequest(form.Title, form.Description, null);
-        var result = await _storyService.UpdateAsync(id, request, user, form.CoverImage, cancellationToken);
+        var request = new UpdateStoryRequest(title, description, null);
+        var result = await _storyService.UpdateAsync(id, request, user, coverImage, cancellationToken);
         return result.IsSuccess
             ? Ok(result.Value)
             : BadRequest(new { error = result.Error });
