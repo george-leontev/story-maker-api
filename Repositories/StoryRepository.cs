@@ -15,6 +15,7 @@ public sealed class StoryRepository : IStoryRepository
         return await _db.Stories
             .Include(s => s.Author)
             .Include(s => s.Chapters)
+            .ThenInclude(c => c.Choice)
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
     }
@@ -24,6 +25,7 @@ public sealed class StoryRepository : IStoryRepository
         return await _db.Stories
             .Include(s => s.Author)
             .Include(s => s.Chapters)
+            .ThenInclude(c => c.Choice)
             .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
     }
 
@@ -32,6 +34,7 @@ public sealed class StoryRepository : IStoryRepository
         var query = _db.Stories
             .Include(s => s.Author)
             .Include(s => s.Chapters)
+            .ThenInclude(c => c.Choice)
             .AsNoTracking()
             .OrderByDescending(s => s.CreatedAt);
 
@@ -46,6 +49,7 @@ public sealed class StoryRepository : IStoryRepository
         var query = _db.Stories
             .Include(s => s.Author)
             .Include(s => s.Chapters)
+            .ThenInclude(c => c.Choice)
             .AsNoTracking()
             .Where(s => s.AuthorId == authorId)
             .OrderByDescending(s => s.CreatedAt);
@@ -87,6 +91,12 @@ public sealed class StoryRepository : IStoryRepository
     public async Task AddChoiceAsync(Choice choice, CancellationToken cancellationToken)
     {
         _db.Choices.Add(choice);
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task UpdateChoiceAsync(Choice choice, CancellationToken cancellationToken)
+    {
+        _db.Choices.Update(choice);
         await _db.SaveChangesAsync(cancellationToken);
     }
 }

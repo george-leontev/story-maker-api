@@ -22,6 +22,9 @@ public sealed class ChapterService : IChapterService
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        if (string.IsNullOrWhiteSpace(request.Title))
+            return Result<ChapterResponse>.Failure("Название главы обязательно.");
+
         if (string.IsNullOrWhiteSpace(request.Content))
             return Result<ChapterResponse>.Failure("Содержимое главы обязательно.");
 
@@ -48,6 +51,7 @@ public sealed class ChapterService : IChapterService
         var chapter = new Chapter
         {
             StoryId = storyId,
+            Title = request.Title,
             Content = request.Content,
             SequenceNumber = sequenceNumber.Value,
             CreatedAt = DateTime.UtcNow

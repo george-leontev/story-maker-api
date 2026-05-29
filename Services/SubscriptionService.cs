@@ -80,6 +80,7 @@ public sealed class SubscriptionService : ISubscriptionService
             story.Title,
             story.Description,
             story.CoverImageUrl,
+            story.AuthorId,
             authorUsername,
             story.Rating,
             story.CreatedAt,
