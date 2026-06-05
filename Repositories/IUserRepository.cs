@@ -13,6 +13,8 @@ public interface IUserRepository
     
     Task UpdateAsync(User user, CancellationToken cancellationToken);
     Task DeleteAsync(int id, CancellationToken cancellationToken);
+    Task<IReadOnlyList<string>> CollectUploadedFilesForUserAsync(int id, CancellationToken cancellationToken);
+    Task DeleteWithCascadeAsync(int id, CancellationToken cancellationToken);
     Task<(int StoriesCount, int VotesCount, int CommentsCount)> GetUserStatsAsync(int userId, CancellationToken cancellationToken);
     Task<User?> FindByIdWithDetailsAsync(int id, CancellationToken cancellationToken);
 }

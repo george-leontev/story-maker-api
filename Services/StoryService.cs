@@ -1,5 +1,6 @@
 using StoryMakerApi.Dtos;
 using StoryMakerApi.Dtos.Story;
+using StoryMakerApi.Helpers;
 using StoryMakerApi.Models;
 using StoryMakerApi.Repositories;
 
@@ -34,10 +35,6 @@ public sealed class StoryService : IStoryService
         if (coverImage != null)
         {
             coverImageUrl = await SaveCoverImageAsync(coverImage, cancellationToken);
-        }
-        else if (!string.IsNullOrWhiteSpace(request.CoverImageUrl))
-        {
-            coverImageUrl = request.CoverImageUrl;
         }
 
         var story = new Story
@@ -109,20 +106,8 @@ public sealed class StoryService : IStoryService
         string? coverImageUrl = story.CoverImageUrl;
         if (coverImage != null)
         {
-            // Delete old cover if exists
-            if (!string.IsNullOrWhiteSpace(story.CoverImageUrl))
-            {
-                var oldCoverPath = Path.Combine(_env.ContentRootPath, story.CoverImageUrl.TrimStart('/'));
-                if (File.Exists(oldCoverPath))
-                {
-                    File.Delete(oldCoverPath);
-                }
-            }
+            SafeUploadPath.TryDelete(story.CoverImageUrl, _env.ContentRootPath, "covers");
             coverImageUrl = await SaveCoverImageAsync(coverImage, cancellationToken);
-        }
-        else if (!string.IsNullOrWhiteSpace(request.CoverImageUrl))
-        {
-            coverImageUrl = request.CoverImageUrl;
         }
 
         story.Title = request.Title;
@@ -145,15 +130,7 @@ public sealed class StoryService : IStoryService
         if (story == null)
             return Result<bool>.Failure("История не найдена.");
 
-        // Delete cover image file if exists
-        if (!string.IsNullOrWhiteSpace(story.CoverImageUrl))
-        {
-            var coverPath = Path.Combine(_env.ContentRootPath, story.CoverImageUrl.TrimStart('/'));
-            if (File.Exists(coverPath))
-            {
-                File.Delete(coverPath);
-            }
-        }
+        SafeUploadPath.TryDelete(story.CoverImageUrl, _env.ContentRootPath, "covers");
 
         await _storyRepository.DeleteAsync(id, cancellationToken);
 

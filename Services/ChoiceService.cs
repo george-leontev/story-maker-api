@@ -65,10 +65,10 @@ public sealed class ChoiceService : IChoiceService
         return Result<ChoiceResponse>.Success(MapToPublicResponse(choice));
     }
 
-    public async Task<Result<ChoiceResponse>> GetPublicAsync(int id, CancellationToken cancellationToken)
+    public async Task<Result<ChoiceResponse>> GetPublicAsync(int chapterId, int id, CancellationToken cancellationToken)
     {
         var choice = await _choiceRepository.FindByIdAsync(id, cancellationToken);
-        if (choice == null)
+        if (choice == null || choice.ChapterId != chapterId)
             return Result<ChoiceResponse>.Failure("Выбор не найден.");
 
         await TryCloseExpiredChoiceAsync(choice, cancellationToken);
@@ -87,10 +87,10 @@ public sealed class ChoiceService : IChoiceService
         return Result<ChoiceResponse>.Success(MapToPublicResponse(choice));
     }
 
-    public async Task<Result<ChoiceAuthorResponse>> GetAuthorViewAsync(int id, int authorId, CancellationToken cancellationToken)
+    public async Task<Result<ChoiceAuthorResponse>> GetAuthorViewAsync(int chapterId, int id, int authorId, CancellationToken cancellationToken)
     {
         var choice = await _choiceRepository.FindByIdAsync(id, cancellationToken);
-        if (choice == null)
+        if (choice == null || choice.ChapterId != chapterId)
             return Result<ChoiceAuthorResponse>.Failure("Выбор не найден.");
 
         var story = await _storyRepository.FindByIdAsync(choice.Chapter.StoryId, cancellationToken);
@@ -102,13 +102,13 @@ public sealed class ChoiceService : IChoiceService
         return Result<ChoiceAuthorResponse>.Success(MapToAuthorResponse(choice));
     }
 
-    public async Task<Result<bool>> VoteAsync(int choiceId, int option, int userId, CancellationToken cancellationToken)
+    public async Task<Result<bool>> VoteAsync(int chapterId, int choiceId, int option, int userId, CancellationToken cancellationToken)
     {
         if (option != 1 && option != 2)
             return Result<bool>.Failure("Неверный вариант. Должен быть 1 или 2.");
 
         var choice = await _choiceRepository.FindByIdForUpdateAsync(choiceId, cancellationToken);
-        if (choice == null)
+        if (choice == null || choice.ChapterId != chapterId)
             return Result<bool>.Failure("Выбор не найден.");
 
         if (choice.IsClosed)

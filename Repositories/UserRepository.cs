@@ -84,4 +84,56 @@ public sealed class UserRepository : IUserRepository
         var commentsCount = await _db.Comments.CountAsync(c => c.UserId == userId, cancellationToken);
         return (storiesCount, votesCount, commentsCount);
     }
+
+    /// <summary>
+    /// Returns relative URLs of all uploaded files that belong to the user
+    /// (avatar + cover images of stories authored by the user). Files themselves
+    /// are deleted by the caller — repository only owns DB state.
+    /// </summary>
+    public async Task<IReadOnlyList<string>> CollectUploadedFilesForUserAsync(int id, CancellationToken cancellationToken)
+    {
+        var paths = new List<string>();
+
+        var avatar = await _db.Users
+            .AsNoTracking()
+            .Where(u => u.Id == id)
+            .Select(u => u.AvatarImageUrl)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (!string.IsNullOrWhiteSpace(avatar)) paths.Add(avatar);
+
+        var covers = await _db.Stories
+            .AsNoTracking()
+            .Where(s => s.AuthorId == id && s.CoverImageUrl != null)
+            .Select(s => s.CoverImageUrl!)
+            .ToListAsync(cancellationToken);
+        paths.AddRange(covers);
+
+        return paths;
+    }
+
+    /// <summary>
+    /// Deletes the user along with every entity that has Restrict cascade on User —
+    /// votes, comments, subscriptions, ratings authored by the user, and stories
+    /// authored by the user (which in turn cascade-delete their chapters/choices/votes/
+    /// comments/subscriptions/ratings via the DbContext relationship config).
+    /// </summary>
+    public async Task DeleteWithCascadeAsync(int id, CancellationToken cancellationToken)
+    {
+        var user = await _db.Users.FindAsync([id], cancellationToken);
+        if (user == null) return;
+
+        // 1) Things authored by the user that block deletion via Restrict.
+        _db.Votes.RemoveRange(_db.Votes.Where(v => v.UserId == id));
+        _db.Comments.RemoveRange(_db.Comments.Where(c => c.UserId == id));
+        _db.Subscriptions.RemoveRange(_db.Subscriptions.Where(s => s.UserId == id));
+        _db.StoryRatings.RemoveRange(_db.StoryRatings.Where(r => r.UserId == id));
+
+        // 2) Stories authored by the user (Story.AuthorId Restrict). Their chapters,
+        //    choices, comments, subscriptions, ratings cascade via FK.
+        var stories = await _db.Stories.Where(s => s.AuthorId == id).ToListAsync(cancellationToken);
+        _db.Stories.RemoveRange(stories);
+
+        _db.Users.Remove(user);
+        await _db.SaveChangesAsync(cancellationToken);
+    }
 }

@@ -50,6 +50,8 @@ public sealed class ChapterRepository : IChapterRepository
 
     public async Task UpdateAsync(Chapter chapter, CancellationToken cancellationToken)
     {
+        // FindByIdAsync returns a detached entity (AsNoTracking) — attach + mark Modified.
+        _db.Chapters.Update(chapter);
         await _db.SaveChangesAsync(cancellationToken);
     }
 

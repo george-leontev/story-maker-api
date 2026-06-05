@@ -51,7 +51,7 @@ public class ChoiceController : BaseController
         [SwaggerParameter("ID выбора", Required = true)] int id,
         CancellationToken cancellationToken)
     {
-        var result = await _choiceService.GetPublicAsync(id, cancellationToken);
+        var result = await _choiceService.GetPublicAsync(chapterId, id, cancellationToken);
         return result.IsSuccess
             ? Ok(result.Value)
             : NotFound(new { error = result.Error });
@@ -88,7 +88,7 @@ public class ChoiceController : BaseController
         CancellationToken cancellationToken)
     {
         var authorId = GetCurrentUserId();
-        var result = await _choiceService.GetAuthorViewAsync(id, authorId, cancellationToken);
+        var result = await _choiceService.GetAuthorViewAsync(chapterId, id, authorId, cancellationToken);
         return result.IsSuccess
             ? Ok(result.Value)
             : Forbid();
@@ -110,14 +110,14 @@ public class ChoiceController : BaseController
         CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
-        var result = await _choiceService.VoteAsync(id, request.Option, userId, cancellationToken);
+        var result = await _choiceService.VoteAsync(chapterId, id, request.Option, userId, cancellationToken);
         if (result.IsSuccess)
         {
             // Возвращаем обновлённый выбор
-            var choiceResult = await _choiceService.GetPublicAsync(id, cancellationToken);
+            var choiceResult = await _choiceService.GetPublicAsync(chapterId, id, cancellationToken);
             return choiceResult.IsSuccess
                 ? Ok(choiceResult.Value)
-                : Ok(new ChoiceResponse(id, 0, "", "", DateTime.UtcNow, false, null, null, null));
+                : Ok(new ChoiceResponse(id, chapterId, "", "", DateTime.UtcNow, false, null, null, null));
         }
         return BadRequest(new { error = result.Error });
     }

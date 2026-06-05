@@ -90,15 +90,15 @@ public class UserController : BaseController
     [SwaggerResponse(200, "Аватар загружен", typeof(ProfileResponse))]
     [SwaggerResponse(400, "Неверный формат файла")]
     public async Task<ActionResult<ProfileResponse>> UploadAvatar(
-        [FromForm] IFormFile avatar,
+        [FromForm] UploadAvatarFormRequest form,
         CancellationToken cancellationToken)
     {
         var userId = GetCurrentUserId();
-        
-        if (avatar == null || avatar.Length == 0)
+
+        if (form.Avatar == null || form.Avatar.Length == 0)
             return BadRequest(new { error = "Файл не выбран." });
 
-        var result = await _userService.UploadAvatarAsync(userId, avatar, cancellationToken);
+        var result = await _userService.UploadAvatarAsync(userId, form.Avatar, cancellationToken);
         return result.IsSuccess
             ? Ok(await _userService.GetProfileAsync(userId, cancellationToken))
             : BadRequest(new { error = result.Error });

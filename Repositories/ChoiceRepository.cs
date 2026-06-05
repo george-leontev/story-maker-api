@@ -73,6 +73,9 @@ public sealed class ChoiceRepository : IChoiceRepository
         choice.WinningOption = choice.Option1Votes > choice.Option2Votes ? 1
             : choice.Option2Votes > choice.Option1Votes ? 2
             : 0; // tie
+        // Attach detached entities (FindByIdAsync uses AsNoTracking); for tracked
+        // entities Update is idempotent (marks them Modified).
+        _db.Choices.Update(choice);
         await _db.SaveChangesAsync(cancellationToken);
     }
 }

@@ -57,7 +57,7 @@ public sealed class SubscriptionService : ISubscriptionService
         var subscriptions = await _subscriptionRepository.GetSubscribersAsync(storyId, cancellationToken);
 
         var subscribers = subscriptions
-            .Select(s => new SubscriptionResponse(s.User.Id, s.User.Username, s.User.Email))
+            .Select(s => new SubscriptionResponse(s.User.Id, s.User.Username))
             .ToList()
             .AsReadOnly();
 

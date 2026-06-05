@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Options;
 using StoryMakerApi.Dtos;
 using StoryMakerApi.Dtos.User;
+using StoryMakerApi.Helpers;
 using StoryMakerApi.Models;
 using StoryMakerApi.Repositories;
 
@@ -144,13 +145,7 @@ public sealed class UserService : IUserService
         if (!allowedExtensions.Contains(fileExtension))
             return Result.Failure("Разрешены только изображения: JPG, PNG, WEBP");
 
-        // Удаляем старый аватар если есть
-        if (!string.IsNullOrWhiteSpace(user.AvatarImageUrl))
-        {
-            var oldAvatarPath = Path.Combine(_env.ContentRootPath, user.AvatarImageUrl.TrimStart('/'));
-            if (File.Exists(oldAvatarPath))
-                File.Delete(oldAvatarPath);
-        }
+        SafeUploadPath.TryDelete(user.AvatarImageUrl, _env.ContentRootPath, "avatars");
 
         var fileName = $"{Guid.NewGuid()}{fileExtension}";
         var uploadsFolder = Path.Combine(_env.ContentRootPath, "uploads", "avatars");
@@ -173,15 +168,19 @@ public sealed class UserService : IUserService
         if (user == null)
             return Result.Failure("Пользователь не найден.");
 
-        // Удаляем все файлы аватара
-        if (!string.IsNullOrWhiteSpace(user.AvatarImageUrl))
+        // Snapshot file paths first — once DB delete runs, we lose the references.
+        var uploadedFiles = await _userRepository.CollectUploadedFilesForUserAsync(userId, cancellationToken);
+
+        await _userRepository.DeleteWithCascadeAsync(userId, cancellationToken);
+
+        // Best-effort filesystem cleanup. Whitelisted to ContentRoot/uploads/{avatars,covers}
+        // so a malicious DB row cannot make us delete arbitrary files.
+        foreach (var path in uploadedFiles)
         {
-            var avatarPath = Path.Combine(_env.ContentRootPath, user.AvatarImageUrl.TrimStart('/'));
-            if (File.Exists(avatarPath))
-                File.Delete(avatarPath);
+            SafeUploadPath.TryDelete(path, _env.ContentRootPath, "avatars");
+            SafeUploadPath.TryDelete(path, _env.ContentRootPath, "covers");
         }
 
-        await _userRepository.DeleteAsync(userId, cancellationToken);
         _logger.LogInformation("Account deleted for user {UserId}", userId);
         return Result.Success();
     }
